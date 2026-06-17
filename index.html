@@ -157,15 +157,38 @@
                 </div>
             </div>
 
-            <!-- Consola de Estado de API -->
-            <div id="api-status-box" class="hidden text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-start space-x-2.5 animate-fadeIn">
-                <div class="text-blue-500 mt-0.5" id="api-status-icon">
-                    <i class="fa-solid fa-circle-notch animate-spin"></i>
+            <!-- Consola de Estado de API Avanzada con Diagnóstico de Errores -->
+            <div id="api-status-box" class="hidden text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2 animate-fadeIn">
+                <div class="flex items-start space-x-2.5">
+                    <div class="text-blue-500 mt-0.5" id="api-status-icon">
+                        <i class="fa-solid fa-circle-notch animate-spin"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-semibold text-slate-700" id="api-status-title">Conectando con Carrefour...</p>
+                        <p class="text-slate-500 text-[11px] leading-relaxed" id="api-status-desc">Iniciando protocolo de consulta proxy multicanal...</p>
+                    </div>
                 </div>
-                <div class="flex-1">
-                    <p class="font-semibold text-slate-700" id="api-status-title">Conectando con Carrefour...</p>
-                    <p class="text-slate-500 text-[11px] leading-relaxed" id="api-status-desc">Buscando producto mediante el código de barras y código postal.</p>
+
+                <!-- Formulario de precio manual auxiliar integrado cuando falla el proxy -->
+                <div id="manual-price-fallback-box" class="hidden p-2.5 bg-amber-50 rounded-xl border border-amber-200 space-y-2">
+                    <p class="text-[11px] text-amber-800 font-semibold flex items-center gap-1">
+                        <i class="fa-solid fa-keyboard"></i> ¿La API está bloqueada? Escribe el precio tú mismo:
+                    </p>
+                    <div class="flex gap-2">
+                        <input type="number" id="fallback-price-input" placeholder="Precio ($)" class="w-1/2 text-xs bg-white border border-amber-300 rounded px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-amber-500">
+                        <button onclick="aplicarPrecioManualFallback()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold py-1.5 px-3 rounded transition">
+                            Usar este precio
+                        </button>
+                    </div>
                 </div>
+                
+                <!-- Caja desplegable de Logs de Diagnóstico Técnico -->
+                <details class="bg-white border border-slate-200 rounded-lg p-2 text-[10px] text-slate-600 font-mono">
+                    <summary class="font-bold text-slate-500 cursor-pointer select-none">Ver logs de conexión técnica</summary>
+                    <div class="mt-1.5 space-y-1 max-h-32 overflow-y-auto" id="technical-debug-logs">
+                        <div>[Sistema] Esperando consulta...</div>
+                    </div>
+                </details>
             </div>
         </section>
 
@@ -364,7 +387,6 @@
             }
         }
 
-        // --- STREAMING_CHUNK: Managing location and GPS services... ---
         // --- SERVICIO DE UBICACIÓN Y PERMISOS GPS ---
         function obtenerUbicacionRapida() {
             if ("geolocation" in navigator) {
@@ -399,7 +421,6 @@
                 },
                 (error) => {
                     console.error("Error al pedir ubicación:", error);
-                    // Si el error es código 1 (PERMISSION_DENIED), mostramos el modal instructivo
                     if (error.code === 1) {
                         abrirGuiaPermisos(
                             "Acceso de Ubicación Denegado",
@@ -454,31 +475,25 @@
             document.querySelectorAll('.lbl-cp-inline').forEach(el => el.innerText = postalCodeActivo);
         }
 
-        // --- STREAMING_CHUNK: Implementing camera and scanner permissions... ---
         // --- SISTEMA DE CÁMARA Y ESCÁNER ---
         function comprobarYActivarCamara() {
             const container = document.getElementById('scanner-container');
             const btn = document.getElementById('btn-toggle-scanner');
 
-            // Si ya está abierto, lo apagamos
             if (!container.classList.contains('hidden')) {
                 detenerEscaneo();
                 return;
             }
 
-            // Si está apagado, vamos a evaluar primero el permiso
             mostrarToast("Inicializando cámara...", "fa-camera");
             
-            // Verificamos si existe soporte de medios en el navegador
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 mostrarToast("Tu dispositivo no admite la cámara en páginas web", "fa-triangle-exclamation");
                 return;
             }
 
-            // Al intentar obtener las cámaras, el navegador preguntará el permiso nativo de inmediato
             Html5Qrcode.getCameras().then(devices => {
                 if (devices && devices.length > 0) {
-                    // Si responde, es que tenemos permiso concedido
                     container.classList.remove('hidden');
                     btn.innerHTML = `<i class="fa-solid fa-video-slash"></i> Detener Cámara`;
                     btn.className = "bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center gap-1 transition active:scale-95";
@@ -495,7 +510,6 @@
                 }
             }).catch(err => {
                 console.error("Error al pedir cámaras:", err);
-                // Si la promesa falla, es sumamente probable que el usuario lo haya rechazado/bloqueado
                 abrirGuiaPermisos(
                     "Permiso de Cámara Requerido",
                     "No pudimos acceder a tu cámara. Necesitamos el permiso del navegador para poder leer los códigos de barra de tus productos automáticamente."
@@ -553,69 +567,106 @@
             document.getElementById('permission-guide-modal').classList.add('hidden');
         }
 
-        // --- STREAMING_CHUNK: Processing database queries and VTEX parsers... ---
-        // --- API CARREFOUR & PROXIES ---
-        function consultarEanDePrueba() {
-            document.getElementById('form-ean').value = "7790742333605"; // Leche La Serenísima
-            document.getElementById('form-name').value = "Leche UAT Zero lactosa La Serenisima 1L";
-            mostrarToast("Código de leche de prueba colocado", "fa-keyboard");
+        // --- API CARREFOUR & PROXIES MULTICANAL ---
+        function logTecnico(mensaje, tipo = "info") {
+            const logsContainer = document.getElementById('technical-debug-logs');
+            const color = tipo === "error" ? "text-red-500" : (tipo === "success" ? "text-emerald-600" : "text-slate-600");
+            const logEntry = document.createElement('div');
+            logEntry.className = color;
+            logEntry.innerText = `[${new Date().toLocaleTimeString()}] ${mensaje}`;
+            logsContainer.appendChild(logEntry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
         }
 
-        async function fetchWithTimeout(url, options = {}, timeout = 4000) {
+        async function fetchWithTimeout(url, options = {}, timeout = 6000) {
             return Promise.race([
                 fetch(url, options),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Proxy Timeout')), timeout))
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Proxy Timeout (Excedió 6s)')), timeout))
             ]);
         }
 
+        // Ejecuta consulta cruzando múltiples proxies y evadiendo la caché del CDN
         async function fetchProductFromCarrefour(ean, postalCode) {
-            const targetUrl = `https://www.carrefour.com.ar/api/io/_v/api/intelligent-search/product_search?query=${ean}&postalCode=${postalCode}`;
+            const timestamp = Date.now();
+            // Deshabilitamos la caché de CDN añadiendo variables aleatorias a la URL de Carrefour
+            const targetUrl = `https://www.carrefour.com.ar/api/io/_v/api/intelligent-search/product_search?query=${ean}&postalCode=${postalCode}&_nocache=${timestamp}`;
             
-            // INTENTO 1: AllOrigins (Fórmula segura de emulación de navegador)
+            document.getElementById('technical-debug-logs').innerHTML = ""; // Limpiar logs previos
+            logTecnico(`URL objetivo: ${targetUrl}`);
+
+            // CANAL 1: CORSProxy.io (Excelente velocidad en la nube)
             try {
-                const proxyUrl1 = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                const response = await fetchWithTimeout(proxyUrl1, {}, 4000);
+                const proxyUrl1 = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+                logTecnico("Intentando Canal 1 (CORSProxy.io)...");
+                const response = await fetchWithTimeout(proxyUrl1, {}, 5000);
                 if (response.ok) {
-                    const data = await response.json();
-                    if (data && data.contents) {
-                        return JSON.parse(data.contents);
+                    const textData = await response.text();
+                    
+                    // ¿Es HTML de bloqueo de Cloudflare en lugar de un JSON?
+                    if (textData.trim().startsWith("<") || textData.toLowerCase().includes("cloudflare") || textData.toLowerCase().includes("captcha")) {
+                        throw new Error("Bloqueo de seguridad (Cloudflare Captcha) detectado en Carrefour.");
                     }
+                    
+                    const jsonData = JSON.parse(textData);
+                    logTecnico("Canal 1 exitoso y recibido.", "success");
+                    return jsonData;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
                 }
             } catch (err) {
-                console.warn("Proxy 1 (AllOrigins) falló o expiró:", err);
+                logTecnico(`Canal 1 fallido: ${err.message}`, "error");
             }
 
-            // INTENTO 2: Codetabs (Proxy alternativo rápido)
+            // CANAL 2: AllOrigins RAW (Formato sin parseo intermedio JSON del proxy para evadir CORS)
             try {
-                const proxyUrl2 = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
-                const response = await fetchWithTimeout(proxyUrl2, {}, 4000);
+                const proxyUrl2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+                logTecnico("Intentando Canal 2 (AllOrigins RAW)...");
+                const response = await fetchWithTimeout(proxyUrl2, {}, 6000);
                 if (response.ok) {
-                    const rawData = await response.json();
-                    return rawData;
+                    const textData = await response.text();
+                    if (textData.trim().startsWith("<") || textData.toLowerCase().includes("cloudflare") || textData.toLowerCase().includes("captcha")) {
+                        throw new Error("Bloqueo de seguridad Carrefour.");
+                    }
+                    const jsonData = JSON.parse(textData);
+                    logTecnico("Canal 2 exitoso.", "success");
+                    return jsonData;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
                 }
             } catch (err) {
-                console.warn("Proxy 2 (Codetabs) falló o expiró:", err);
+                logTecnico(`Canal 2 fallido: ${err.message}`, "error");
             }
 
-            // INTENTO 3: Thingproxy (Tercer respaldo)
+            // CANAL 3: Codetabs (Tercera opción de bypass)
             try {
-                const proxyUrl3 = `https://thingproxy.freeboard.io/fetch/${targetUrl}`;
-                const response = await fetchWithTimeout(proxyUrl3, {}, 4000);
+                const proxyUrl3 = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
+                logTecnico("Intentando Canal 3 (Codetabs)...");
+                const response = await fetchWithTimeout(proxyUrl3, {}, 6000);
                 if (response.ok) {
-                    const rawData = await response.json();
-                    return rawData;
+                    const textData = await response.text();
+                    if (textData.trim().startsWith("<") || textData.toLowerCase().includes("cloudflare") || textData.toLowerCase().includes("captcha")) {
+                        throw new Error("Bloqueo de seguridad Carrefour.");
+                    }
+                    const jsonData = JSON.parse(textData);
+                    logTecnico("Canal 3 exitoso.", "success");
+                    return jsonData;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
                 }
             } catch (err) {
-                console.warn("Proxy 3 (Thingproxy) falló o expiró:", err);
+                logTecnico(`Canal 3 fallido: ${err.message}`, "error");
             }
 
-            throw new Error("Todos los canales de sincronización de precios fallaron.");
+            throw new Error("Todos los canales de red proxy alternativos fallaron debido al firewall de Carrefour.");
         }
 
         function procesarRespuestaVtex(data) {
             try {
                 let products = Array.isArray(data) ? data : (data.products || []);
-                if (products.length === 0) return null;
+                if (products.length === 0) {
+                    logTecnico("La API respondió bien pero devolvió una lista vacía (sin stock/sin coincidencias en ese CP).", "error");
+                    return null;
+                }
 
                 const prod = products[0];
                 const brand = prod.brand || "";
@@ -624,20 +675,23 @@
 
                 let spotPrice = null;
 
-                // Opción Prioritaria: Buscar en priceRange.sellingPrice del objeto raíz (Optimizado de tu JSON)
+                // Opción A: Extraer del rango de precios (priceRange) de VTEX Intelligent Search
                 if (prod.priceRange && prod.priceRange.sellingPrice) {
                     spotPrice = prod.priceRange.sellingPrice.lowPrice;
+                    logTecnico(`Precio spot detectado en priceRange: $${spotPrice}`);
                 }
 
-                // Opción Secundaria: Buscar en el bloque de ofertas comerciales tradicionales
+                // Opción B: Recorrer estructura de sellers profunda
                 if ((spotPrice === null || spotPrice === undefined) && prod.items && prod.items[0] && prod.items[0].sellers && prod.items[0].sellers[0]) {
                     const seller = prod.items[0].sellers[0];
                     if (seller.commertialOffer) {
                         const offer = seller.commertialOffer;
                         if (offer.spotPrice !== undefined && offer.spotPrice !== null) {
                             spotPrice = offer.spotPrice;
+                            logTecnico(`Precio spot detectado en offer.spotPrice: $${spotPrice}`);
                         } else if (offer.Price !== undefined && offer.Price !== null) {
                             spotPrice = offer.Price;
+                            logTecnico(`Precio spot detectado en offer.Price: $${spotPrice}`);
                         }
                     }
                 }
@@ -654,18 +708,19 @@
                         image: imageUrl
                     };
                 }
+                
+                logTecnico("No se encontró ningún valor numérico de precio spot en el objeto de datos.", "error");
                 return null;
             } catch (err) {
-                console.error("Error interpretando formato de respuesta de la cadena:", err);
+                logTecnico(`Error al analizar datos internos del producto: ${err.message}`, "error");
                 return null;
             }
         }
 
-        // --- STREAMING_CHUNK: Implementing inventory logic... ---
         async function buscarPrecioEnCarrefour() {
             const ean = document.getElementById('form-ean').value.trim();
             if (!ean) {
-                mostrarToast("Por favor ingresa o escanea un código EAN primero", "fa-triangle-exclamation");
+                mostrarToast("Ingresa o escanea un código EAN primero", "fa-triangle-exclamation");
                 return;
             }
 
@@ -673,8 +728,10 @@
             const statusIcon = document.getElementById('api-status-icon');
             const statusTitle = document.getElementById('api-status-title');
             const statusDesc = document.getElementById('api-status-desc');
+            const fallbackBox = document.getElementById('manual-price-fallback-box');
 
             statusBox.classList.remove('hidden');
+            fallbackBox.classList.add('hidden'); // Ocultar fallback por defecto
             statusIcon.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin text-blue-500"></i>`;
             statusTitle.innerText = "Consultando Carrefour...";
             statusDesc.innerText = `Buscando EAN: ${ean} en C.P: ${postalCodeActivo}`;
@@ -708,24 +765,53 @@
                         statusBox.dataset.tempPrice = parsed.price;
                         statusBox.dataset.tempName = parsed.name;
                         statusBox.dataset.tempImage = parsed.image || "";
-                        mostrarToast("Datos importados con éxito", "fa-cloud-arrow-down");
+                        mostrarToast("Datos sincronizados con éxito", "fa-cloud-arrow-down");
                     } else {
                         statusIcon.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-500 text-lg"></i>`;
-                        statusTitle.innerText = "No se encontraron coincidencias";
-                        statusDesc.innerText = "El producto no se encuentra en Carrefour para tu CP. Puedes cargarlo manualmente.";
+                        statusTitle.innerText = "Producto no disponible en esta zona";
+                        statusDesc.innerText = "No se hallaron ofertas o existencias para tu código postal. Puedes registrarle un precio estimado debajo:";
+                        fallbackBox.classList.remove('hidden');
                         limpiarTempData(statusBox);
                     }
                 } else {
-                    throw new Error("Respuesta vacía o nula");
+                    throw new Error("Respuesta de la red vacía.");
                 }
             } catch (error) {
-                console.error("Error al buscar el producto:", error);
+                console.error("Error consultando Carrefour:", error);
                 statusIcon.innerHTML = `<i class="fa-solid fa-circle-exclamation text-red-500 text-lg"></i>`;
-                statusTitle.innerText = "No disponible (o Servidor Lento)";
-                statusDesc.innerText = "No pudimos conectar con los precios. Puedes escribir el nombre de manera manual y guardarlo.";
+                statusTitle.innerText = "Servicio no disponible temporalmente";
+                statusDesc.innerText = "Carrefour bloqueó la conexión automática de red. Ingresa un precio manual provisorio para guardarlo en tu alacena:";
+                fallbackBox.classList.remove('hidden');
                 limpiarTempData(statusBox);
-                mostrarToast("No se pudo obtener el precio spot", "fa-triangle-exclamation");
+                mostrarToast("No pudimos conectar con los precios", "fa-triangle-exclamation");
             }
+        }
+
+        // Aplica el precio manual provisorio digitado por el usuario en caso de bloqueo del API
+        function aplicarPrecioManualFallback() {
+            const val = parseFloat(document.getElementById('fallback-price-input').value);
+            if (!val || val <= 0) {
+                mostrarToast("Escribe un precio válido mayor a 0", "fa-triangle-exclamation");
+                return;
+            }
+
+            const statusBox = document.getElementById('api-status-box');
+            statusBox.dataset.tempPrice = val;
+            
+            // Si el nombre está vacío, sugerimos un nombre provisorio para que guarde rápido
+            const nameInput = document.getElementById('form-name');
+            if (!nameInput.value.trim()) {
+                nameInput.value = `Producto Manual (${document.getElementById('form-ean').value})`;
+            }
+
+            mostrarToast("Precio manual aplicado", "fa-check");
+            document.getElementById('fallback-price-input').value = "";
+            document.getElementById('manual-price-fallback-box').classList.add('hidden');
+            
+            // Actualiza visualmente el recuadro
+            document.getElementById('api-status-icon').innerHTML = `<i class="fa-solid fa-circle-check text-amber-500 text-lg"></i>`;
+            document.getElementById('api-status-title').innerText = "¡Precio Provisorio Asignado!";
+            document.getElementById('api-status-desc').innerText = `Registrado a un precio de $${val.toLocaleString('es-AR')}. Listo para guardar en alacena.`;
         }
 
         function limpiarTempData(box) {
@@ -741,7 +827,6 @@
             input.value = val;
         }
 
-        // --- STREAMING_CHUNK: Managing local database mutations... ---
         function guardarProducto() {
             const ean = document.getElementById('form-ean').value.trim();
             const name = document.getElementById('form-name').value.trim();
@@ -828,7 +913,6 @@
             renderizarAlacena();
         }
 
-        // --- STREAMING_CHUNK: Redrawing interface... ---
         function renderizarAlacena() {
             const container = document.getElementById('lista-productos');
             const totalItemsLbl = document.getElementById('total-items');
@@ -919,7 +1003,6 @@
             actualizarListaDeCompras();
         }
 
-        // --- STREAMING_CHUNK: Compiling calculations for missing inventory... ---
         function actualizarListaDeCompras() {
             const comprasUl = document.getElementById('compras-items');
             const criticalCount = document.getElementById('lbl-critical-count');
@@ -969,7 +1052,6 @@
             totalLbl.innerText = `$${sumaTotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
         }
 
-        // --- CONTROLADORES DE ACCIONES ---
         function filtrarAlacena(filtro) {
             filtroActivo = filtro;
             document.getElementById('btn-filt-todos').className = filtro === 'todos' 
