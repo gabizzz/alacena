@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alacena Inteligente - SpotPrice</title>
+    <title>Alacena Inteligente - SpotPrice Multitienda</title>
     <!-- Tailwind CSS para diseño moderno -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome para iconos atractivos -->
@@ -29,21 +29,21 @@
     </div>
 
     <!-- CABECERA DE LA APP -->
-    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md sticky top-12 z-40" id="app-header">
+    <header class="bg-gradient-to-r from-blue-600 via-indigo-700 to-slate-900 text-white shadow-md sticky top-12 z-40" id="app-header">
         <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center space-x-2">
-                <div class="bg-white text-blue-600 p-2 rounded-xl shadow-inner">
-                    <i class="fa-solid fa-cart-flatbed-suitcases text-lg"></i>
+                <div class="bg-white text-indigo-700 p-2 rounded-xl shadow-inner">
+                    <i class="fa-solid fa-scale-balanced text-lg"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-tight">MiAlacena</h1>
-                    <p class="text-xs text-blue-100 flex items-center gap-1">
+                    <h1 class="font-bold text-lg leading-tight">SpotPrice Alacena</h1>
+                    <p class="text-xs text-indigo-100 flex items-center gap-1">
                         <i class="fa-solid fa-location-dot"></i>
                         <span id="header-postal-code">Detectando ubicación...</span>
                     </p>
                 </div>
             </div>
-            <button onclick="actualizarTodosLosPrecios()" class="bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-full transition-all duration-200 active:scale-95" title="Actualizar precios spot">
+            <button onclick="actualizarTodosLosPrecios()" class="bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-full transition-all duration-200 active:scale-95" title="Sincronizar todas las tiendas">
                 <i class="fa-solid fa-arrows-rotate text-sm"></i>
             </button>
         </div>
@@ -52,27 +52,25 @@
     <!-- CUERPO PRINCIPAL -->
     <main class="flex-1 max-w-md w-full mx-auto p-4 space-y-5">
         
-        <!-- SECCIÓN UBICACIÓN -->
-        <section class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 transition-all">
-            <div class="flex items-center justify-between mb-3">
+        <!-- SECCIÓN UBICACIÓN Y OPTIMIZADOR -->
+        <section class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 transition-all space-y-3">
+            <div class="flex items-center justify-between">
                 <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider">Tu Ubicación de Compra</h3>
                 <span class="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
-                    <i class="fa-solid fa-building-columns"></i> Carrefour Spot
+                    <i class="fa-solid fa-store"></i> Comparador Multitienda
                 </span>
             </div>
             
-            <div class="flex items-center space-x-3 mb-3">
+            <div class="flex items-center space-x-3">
                 <div class="bg-slate-100 p-2.5 rounded-lg text-slate-600">
                     <i class="fa-solid fa-map-location-dot text-lg"></i>
                 </div>
                 <div class="flex-1">
-                    <div class="flex items-center gap-2">
-                        <span class="font-semibold text-slate-800" id="current-city">Zárate (Por defecto)</span>
-                    </div>
-                    <p class="text-xs text-slate-500">Código Postal activo: <strong id="lbl-postal-code">2800</strong></p>
+                    <span class="font-semibold text-slate-800 block text-sm" id="current-city">Zárate (Por defecto)</span>
+                    <p class="text-[11px] text-slate-500">C.P. activo: <strong id="lbl-postal-code">2800</strong></p>
                 </div>
                 <button onclick="solicitarPermisoUbicacion()" class="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded-lg font-medium transition active:scale-95 flex items-center gap-1">
-                    <i class="fa-solid fa-location-crosshairs"></i> Geolocalizar
+                    <i class="fa-solid fa-location-crosshairs"></i> GPS
                 </button>
             </div>
 
@@ -80,8 +78,20 @@
             <div class="pt-3 border-t border-slate-100 flex gap-2">
                 <input type="text" id="manual-postal-code" placeholder="C.P. ej: 2800" class="flex-1 text-sm bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-center">
                 <button onclick="establecerCodigoPostalManual()" class="text-xs bg-slate-800 text-white hover:bg-slate-900 px-4 py-2 rounded-lg font-medium transition active:scale-95">
-                    Aplicar C.P.
+                    Aplicar
                 </button>
+            </div>
+
+            <!-- NUEVO: Selector Global de Filtro de Precios -->
+            <div class="pt-3 border-t border-slate-100">
+                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Calcular Presupuestos según:</label>
+                <select id="global-store-optimizer" onchange="cambiarOptimizadorGlobal(this.value)" class="w-full text-xs bg-indigo-50/70 text-indigo-900 border border-indigo-100 rounded-xl px-3 py-2.5 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <option value="ahorro">💡 Ahorro Máximo (Más barato individual)</option>
+                    <option value="carrefour">🔵 Solo Carrefour</option>
+                    <option value="coto">🔴 Solo Coto Digital</option>
+                    <option value="dia">🔴 Solo Supermercados DIA</option>
+                    <option value="changomas">🟡 Solo ChangoMás (Más Online)</option>
+                </select>
             </div>
         </section>
 
@@ -108,7 +118,7 @@
                     <div class="col-span-2">
                         <label class="block text-xs font-medium text-slate-500 mb-1">Código de Barras (EAN)</label>
                         <div class="relative">
-                            <input type="number" id="form-ean" placeholder="Escribe o escanea un código" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-10 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="number" id="form-ean" placeholder="Escribe o escanea un código" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-20 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
                             <button onclick="consultarEanDePrueba()" class="absolute right-2 top-2 text-xs text-blue-600 font-bold hover:underline">
                                 EAN Prueba
                             </button>
@@ -148,8 +158,8 @@
                 </div>
 
                 <div class="flex gap-2 pt-2">
-                    <button onclick="buscarPrecioEnCarrefour()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-xl text-xs transition active:scale-95 flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-magnifying-glass"></i> Consultar Carrefour
+                    <button onclick="buscarPrecioMultitienda()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-xl text-xs transition active:scale-95 flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-magnifying-glass"></i> Consultar Tiendas
                     </button>
                     <button onclick="guardarProducto()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-xs transition active:scale-95 flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-plus"></i> Guardar en Alacena
@@ -158,21 +168,26 @@
             </div>
 
             <!-- Consola de Estado de API Avanzada con Diagnóstico de Errores -->
-            <div id="api-status-box" class="hidden text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2 animate-fadeIn">
+            <div id="api-status-box" class="hidden text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3 animate-fadeIn">
                 <div class="flex items-start space-x-2.5">
-                    <div class="text-blue-500 mt-0.5" id="api-status-icon">
+                    <div class="text-indigo-600 mt-0.5" id="api-status-icon">
                         <i class="fa-solid fa-circle-notch animate-spin"></i>
                     </div>
                     <div class="flex-1">
-                        <p class="font-semibold text-slate-700" id="api-status-title">Conectando con Carrefour...</p>
-                        <p class="text-slate-500 text-[11px] leading-relaxed" id="api-status-desc">Iniciando protocolo de consulta proxy multicanal...</p>
+                        <p class="font-semibold text-slate-700" id="api-status-title">Iniciando consulta multitienda...</p>
+                        <p class="text-slate-500 text-[11px] leading-relaxed" id="api-status-desc">Consultando en paralelo Carrefour, Coto, DIA y ChangoMás...</p>
                     </div>
+                </div>
+
+                <!-- Grilla de estado por supermercado -->
+                <div class="grid grid-cols-2 gap-2 pt-1" id="multi-search-grid">
+                    <!-- Se inyecta dinámicamente -->
                 </div>
 
                 <!-- Formulario de precio manual auxiliar integrado cuando falla el proxy -->
                 <div id="manual-price-fallback-box" class="hidden p-2.5 bg-amber-50 rounded-xl border border-amber-200 space-y-2">
                     <p class="text-[11px] text-amber-800 font-semibold flex items-center gap-1">
-                        <i class="fa-solid fa-keyboard"></i> ¿La API está bloqueada? Escribe el precio tú mismo:
+                        <i class="fa-solid fa-keyboard"></i> ¿La conexión falló? Define un precio manual sugerido:
                     </p>
                     <div class="flex gap-2">
                         <input type="number" id="fallback-price-input" placeholder="Precio ($)" class="w-1/2 text-xs bg-white border border-amber-300 rounded px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-amber-500">
@@ -232,7 +247,7 @@
         </section>
 
         <!-- SECCIÓN COMPRAS -->
-        <section id="panel-compras" class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-5 rounded-2xl shadow-xl space-y-4">
+        <section id="panel-compras" class="bg-gradient-to-br from-indigo-900 via-slate-900 to-black text-white p-5 rounded-2xl shadow-xl space-y-4">
             <div class="flex items-center justify-between border-b border-white/10 pb-3">
                 <div class="flex items-center space-x-2">
                     <div class="bg-white/15 p-2 rounded-lg">
@@ -240,10 +255,18 @@
                     </div>
                     <div>
                         <h3 class="font-bold text-base">Faltantes Críticos</h3>
-                        <p class="text-[11px] text-indigo-200">Reposición automática bajo el mínimo</p>
+                        <p class="text-[11px] text-indigo-200">Reposición de stock bajo el mínimo</p>
                     </div>
                 </div>
                 <span class="bg-red-500/20 text-red-300 text-xs font-bold px-2.5 py-1 rounded-full" id="lbl-critical-count">0 Items</span>
+            </div>
+
+            <!-- Grilla comparativa de canasta completa -->
+            <div class="bg-white/5 border border-white/10 rounded-xl p-3 space-y-2 text-xs">
+                <p class="font-bold text-[11px] text-amber-400 uppercase tracking-wider"><i class="fa-solid fa-arrow-trend-down"></i> ¿Dónde conviene comprar el carro entero?</p>
+                <div class="grid grid-cols-2 gap-2 text-[11px]" id="basket-comparer-grid">
+                    <!-- Se inyecta dinámicamente -->
+                </div>
             </div>
 
             <ul class="space-y-2.5 text-sm max-h-48 overflow-y-auto pr-1" id="compras-items">
@@ -252,8 +275,8 @@
 
             <div class="bg-white/5 p-3 rounded-xl flex justify-between items-center border border-white/5">
                 <div>
-                    <span class="text-xs text-indigo-200 block">Total Estimado Carrefour</span>
-                    <span class="text-xs text-indigo-300">C.P. <span class="lbl-cp-inline">2800</span></span>
+                    <span class="text-xs text-indigo-200 block" id="shopping-total-label">Total Estimado</span>
+                    <span class="text-[10px] text-indigo-300 font-semibold" id="shopping-total-optimizer-desc">Modo: Ahorro Máximo</span>
                 </div>
                 <div class="text-right">
                     <span class="text-2xl font-black text-amber-300" id="shopping-total">$0.00</span>
@@ -329,6 +352,15 @@
         let ciudadActiva = "Zárate, Buenos Aires";
         let html5QrcodeScanner = null;
         let filtroActivo = "todos";
+        let optimizadorGlobal = "ahorro"; // 'ahorro', 'carrefour', 'coto', 'dia', 'changomas'
+
+        // Estructura de supermercados soportados
+        const SUPERMERCADOS = {
+            carrefour: { nombre: 'Carrefour', color: 'text-blue-600', border: 'border-blue-200' },
+            coto: { nombre: 'Coto Digital', color: 'text-red-600', border: 'border-red-200' },
+            dia: { nombre: 'DIA Online', color: 'text-red-500', border: 'border-red-300' },
+            changomas: { nombre: 'ChangoMás', color: 'text-amber-500', border: 'border-amber-200' }
+        };
 
         // --- BASE DE DATOS DE RECETAS INTEGRADA ---
         const recetasDB = [
@@ -421,6 +453,17 @@
             if (datosGuardados) {
                 try {
                     productos = JSON.parse(datosGuardados);
+                    // Asegurar que los productos tengan estructura de precios multitienda
+                    productos.forEach(p => {
+                        if (!p.prices) {
+                            p.prices = {
+                                carrefour: p.price || null,
+                                coto: null,
+                                dia: null,
+                                changomas: null
+                            };
+                        }
+                    });
                 } catch (e) {
                     console.error("Error al cargar localStorage, restaurando valores iniciales", e);
                     cargarProductosSemilla();
@@ -439,6 +482,7 @@
                     stock: 1, 
                     min: 3, 
                     price: 2865, 
+                    prices: { carrefour: 2865, coto: 2790, dia: 2840, changomas: 2850 },
                     image: "https://carrefourar.vtexassets.com/arquivos/ids/848608/7790742333605_01.jpg?v=639118753386930000",
                     lastUpdate: "Sincronizado" 
                 },
@@ -449,6 +493,7 @@
                     stock: 3, 
                     min: 2, 
                     price: 2800, 
+                    prices: { carrefour: 2800, coto: 2650, dia: 2720, changomas: 2790 },
                     image: "",
                     lastUpdate: "Reciente" 
                 },
@@ -459,6 +504,7 @@
                     stock: 0, 
                     min: 2, 
                     price: 2599, 
+                    prices: { carrefour: 2599, coto: 2480, dia: 2510, changomas: null },
                     image: "",
                     lastUpdate: "Falta actualizar" 
                 }
@@ -629,7 +675,7 @@
                     document.getElementById('form-ean').value = decodedText;
                     mostrarToast(`Código detectado: ${decodedText}`, "fa-barcode");
                     detenerEscaneo();
-                    buscarPrecioEnCarrefour();
+                    buscarPrecioMultitienda();
                 },
                 (errorMessage) => {
                     // Silencio de depuración
@@ -656,7 +702,6 @@
             }
         }
 
-        // --- CONTROLADORES DE MODALES DE AYUDA DE PERMISO ---
         function abrirGuiaPermisos(titulo, descripcion) {
             document.getElementById('guide-modal-title').innerText = titulo;
             document.getElementById('guide-modal-desc').innerText = descripcion;
@@ -667,7 +712,7 @@
             document.getElementById('permission-guide-modal').classList.add('hidden');
         }
 
-        // --- API CARREFOUR & PROXIES MULTICANAL ---
+        // --- STREAMING_CHUNK: Writing the multi-supermarket scanner logic... -->
         function logTecnico(mensaje, tipo = "info") {
             const logsContainer = document.getElementById('technical-debug-logs');
             const color = tipo === "error" ? "text-red-500" : (tipo === "success" ? "text-emerald-600" : "text-slate-600");
@@ -685,86 +730,69 @@
             ]);
         }
 
-        // Ejecuta consulta cruzando múltiples proxies y evadiendo la caché del CDN
-        async function fetchProductFromCarrefour(ean, postalCode) {
-            const timestamp = Date.now();
-            const targetUrl = `https://www.carrefour.com.ar/api/io/_v/api/intelligent-search/product_search?query=${ean}&postalCode=${postalCode}&_nocache=${timestamp}`;
-            
-            document.getElementById('technical-debug-logs').innerHTML = ""; // Limpiar logs previos
-            logTecnico(`URL objetivo: ${targetUrl}`);
-
-            // CANAL 1: CORSProxy.io (Excelente velocidad en la nube)
-            try {
-                const proxyUrl1 = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-                logTecnico("Intentando Canal 1 (CORSProxy.io)...");
-                const response = await fetchWithTimeout(proxyUrl1, {}, 5000);
-                if (response.ok) {
-                    const textData = await response.text();
-                    
-                    if (textData.trim().startsWith("<") || textData.toLowerCase().includes("cloudflare") || textData.toLowerCase().includes("captcha")) {
-                        throw new Error("Bloqueo de seguridad (Cloudflare Captcha) detectado en Carrefour.");
-                    }
-                    
-                    const jsonData = JSON.parse(textData);
-                    logTecnico("Canal 1 exitoso y recibido.", "success");
-                    return jsonData;
-                } else {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-            } catch (err) {
-                logTecnico(`Canal 1 fallido: ${err.message}`, "error");
+        // --- STREAMING_CHUNK: Coding VTEX and Coto HTML price parsing algorithms... -->
+        // Helper para procesar formato de número monetario argentino (ej: 1.234,56 o 999,00)
+        function parsePriceAR(str) {
+            if (!str) return null;
+            let clean = str.replace(/[^0-9,.]/g, '').trim();
+            if (clean.includes('.') && clean.includes(',')) {
+                clean = clean.replace(/\./g, '').replace(',', '.');
+            } else if (clean.includes(',')) {
+                clean = clean.replace(',', '.');
             }
-
-            // CANAL 2: AllOrigins RAW (Formato sin parseo intermedio JSON del proxy para evadir CORS)
-            try {
-                const proxyUrl2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-                logTecnico("Intentando Canal 2 (AllOrigins RAW)...");
-                const response = await fetchWithTimeout(proxyUrl2, {}, 6000);
-                if (response.ok) {
-                    const textData = await response.text();
-                    if (textData.trim().startsWith("<") || textData.toLowerCase().includes("cloudflare") || textData.toLowerCase().includes("captcha")) {
-                        throw new Error("Bloqueo de seguridad Carrefour.");
-                    }
-                    const jsonData = JSON.parse(textData);
-                    logTecnico("Canal 2 exitoso.", "success");
-                    return jsonData;
-                } else {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-            } catch (err) {
-                logTecnico(`Canal 2 fallido: ${err.message}`, "error");
-            }
-
-            // CANAL 3: Codetabs (Tercera opción de bypass)
-            try {
-                const proxyUrl3 = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
-                logTecnico("Intentando Canal 3 (Codetabs)...");
-                const response = await fetchWithTimeout(proxyUrl3, {}, 6000);
-                if (response.ok) {
-                    const textData = await response.text();
-                    if (textData.trim().startsWith("<") || textData.toLowerCase().includes("cloudflare") || textData.toLowerCase().includes("captcha")) {
-                        throw new Error("Bloqueo de seguridad Carrefour.");
-                    }
-                    const jsonData = JSON.parse(textData);
-                    logTecnico("Canal 3 exitoso.", "success");
-                    return jsonData;
-                } else {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-            } catch (err) {
-                logTecnico(`Canal 3 fallido: ${err.message}`, "error");
-            }
-
-            throw new Error("Todos los canales de red proxy alternativos fallaron debido al firewall de Carrefour.");
+            const num = parseFloat(clean);
+            return isNaN(num) ? null : num;
         }
 
-        function procesarRespuestaVtex(data) {
-            try {
-                let products = Array.isArray(data) ? data : (data.products || []);
-                if (products.length === 0) {
-                    logTecnico("La API respondió bien pero devolvió una lista vacía (sin stock/sin coincidencias en ese CP).", "error");
-                    return null;
+        // Ejecuta la consulta de red a un supermercado específico evadiendo CORS
+        async function fetchPriceFromStore(tienda, ean, postalCode) {
+            let targetUrl = "";
+            const timestamp = Date.now();
+
+            if (tienda === 'carrefour') {
+                targetUrl = `https://www.carrefour.com.ar/api/io/_v/api/intelligent-search/product_search?query=${ean}&postalCode=${postalCode}&_nocache=${timestamp}`;
+            } else if (tienda === 'dia') {
+                targetUrl = `https://www.diaonline.com.ar/api/io/_v/api/intelligent-search/product_search?query=${ean}&_nocache=${timestamp}`;
+            } else if (tienda === 'changomas') {
+                targetUrl = `https://www.masonline.com.ar/api/io/_v/api/intelligent-search/product_search?query=${ean}&_nocache=${timestamp}`;
+            } else if (tienda === 'coto') {
+                targetUrl = `https://www.cotodigital3.com.ar/sitios/cdigi/browse?Ntt=${ean}&_nocache=${timestamp}`;
+            }
+
+            logTecnico(`Consultando ${tienda.toUpperCase()}: ${targetUrl}`);
+
+            // Canales de Bypass CORS secuenciales
+            const proxies = [
+                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
+            ];
+
+            for (let i = 0; i < proxies.length; i++) {
+                try {
+                    logTecnico(`Bypass Canal ${i+1} para ${tienda}...`);
+                    const response = await fetchWithTimeout(proxies[i], {}, 5000);
+                    if (response.ok) {
+                        const textData = await response.text();
+                        if (textData.trim().startsWith("<") && tienda !== 'coto') {
+                            throw new Error("Bloqueo / Firewall CDN");
+                        }
+                        logTecnico(`Canal ${i+1} exitoso para ${tienda}.`, "success");
+                        return textData;
+                    }
+                } catch (err) {
+                    logTecnico(`Canal ${i+1} fallido para ${tienda}: ${err.message}`, "error");
                 }
+            }
+            throw new Error("Todos los canales de red proxy fallaron.");
+        }
+
+        // Parsea datos de VTEX (Carrefour, DIA, ChangoMás)
+        function procesarRespuestaVtex(textData) {
+            try {
+                const data = JSON.parse(textData);
+                let products = Array.isArray(data) ? data : (data.products || []);
+                if (products.length === 0) return null;
 
                 const prod = products[0];
                 const brand = prod.brand || "";
@@ -773,24 +801,15 @@
 
                 let spotPrice = null;
 
-                // Opción A: Extraer del rango de precios (priceRange) de VTEX Intelligent Search
                 if (prod.priceRange && prod.priceRange.sellingPrice) {
                     spotPrice = prod.priceRange.sellingPrice.lowPrice;
-                    logTecnico(`Precio spot detectado en priceRange: $${spotPrice}`);
                 }
 
-                // Opción B: Recorrer estructura de sellers profunda
                 if ((spotPrice === null || spotPrice === undefined) && prod.items && prod.items[0] && prod.items[0].sellers && prod.items[0].sellers[0]) {
                     const seller = prod.items[0].sellers[0];
                     if (seller.commertialOffer) {
                         const offer = seller.commertialOffer;
-                        if (offer.spotPrice !== undefined && offer.spotPrice !== null) {
-                            spotPrice = offer.spotPrice;
-                            logTecnico(`Precio spot detectado en offer.spotPrice: $${spotPrice}`);
-                        } else if (offer.Price !== undefined && offer.Price !== null) {
-                            spotPrice = offer.Price;
-                            logTecnico(`Precio spot detectado en offer.Price: $${spotPrice}`);
-                        }
+                        spotPrice = offer.spotPrice !== undefined ? offer.spotPrice : offer.Price;
                     }
                 }
 
@@ -799,23 +818,61 @@
                     imageUrl = prod.items[0].images[0].imageUrl || "";
                 }
 
-                if (spotPrice !== null && spotPrice !== undefined) {
-                    return {
-                        name: completeName,
-                        price: parseFloat(spotPrice),
-                        image: imageUrl
-                    };
-                }
-                
-                logTecnico("No se encontró ningún valor numérico de precio spot en el objeto de datos.", "error");
-                return null;
+                return {
+                    name: completeName,
+                    price: spotPrice ? parseFloat(spotPrice) : null,
+                    image: imageUrl
+                };
             } catch (err) {
-                logTecnico(`Error al analizar datos internos del producto: ${err.message}`, "error");
                 return null;
             }
         }
 
-        async function buscarPrecioEnCarrefour() {
+        // Parsea datos de Coto (ATG HTML)
+        function procesarRespuestaCoto(htmlText) {
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlText, 'text/html');
+                
+                let name = "";
+                if (doc.title && doc.title.includes("Coto Digital")) {
+                    name = doc.title.split("-")[0].trim();
+                }
+
+                const nameEl = doc.querySelector('.descrip_full, .product_name, h1, h2');
+                if (nameEl) name = nameEl.textContent.trim();
+
+                // Intentar selectores de precio
+                const priceEl = doc.querySelector('.atg_store_newPrice, .atg_store_productPrice, .price_discount');
+                let price = null;
+                if (priceEl) {
+                    price = parsePriceAR(priceEl.textContent);
+                } else {
+                    const match = htmlText.match(/class="atg_store_newPrice"[^>]*>\s*(\$[\d.,\s]+)/i);
+                    if (match) price = parsePriceAR(match[1]);
+                }
+
+                let imageUrl = "";
+                const imgEl = doc.querySelector('.atg_store_productImage img, #atg_store_zoomImage, .product_image img');
+                if (imgEl && imgEl.src) {
+                    imageUrl = imgEl.src;
+                }
+
+                if (price !== null) {
+                    return {
+                        name: name || "Producto Coto",
+                        price: price,
+                        image: imageUrl
+                    };
+                }
+                return null;
+            } catch (err) {
+                return null;
+            }
+        }
+
+        // Lanza las 4 búsquedas simultáneas
+        async function buscarPrecioMultitienda() {
             const ean = document.getElementById('form-ean').value.trim();
             if (!ean) {
                 mostrarToast("Ingresa o escanea un código EAN primero", "fa-triangle-exclamation");
@@ -826,66 +883,92 @@
             const statusIcon = document.getElementById('api-status-icon');
             const statusTitle = document.getElementById('api-status-title');
             const statusDesc = document.getElementById('api-status-desc');
+            const grid = document.getElementById('multi-search-grid');
             const fallbackBox = document.getElementById('manual-price-fallback-box');
 
             statusBox.classList.remove('hidden');
-            fallbackBox.classList.add('hidden'); 
+            fallbackBox.classList.add('hidden');
             statusIcon.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin text-blue-500"></i>`;
-            statusTitle.innerText = "Consultando Carrefour...";
-            statusDesc.innerText = `Buscando EAN: ${ean} en C.P: ${postalCodeActivo}`;
+            statusTitle.innerText = "Consultando Multitienda...";
+            statusDesc.innerText = `EAN: ${ean} | C.P: ${postalCodeActivo}`;
 
-            try {
-                const result = await fetchProductFromCarrefour(ean, postalCodeActivo);
-                
-                if (result) {
-                    const parsed = procesarRespuestaVtex(result);
-                    if (parsed) {
-                        document.getElementById('form-name').value = parsed.name;
-                        
-                        statusIcon.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500 text-lg"></i>`;
-                        statusTitle.innerText = "¡Producto Encontrado!";
-                        
-                        let imageHTML = "";
-                        if (parsed.image) {
-                            imageHTML = `<img src="${parsed.image}" class="w-12 h-12 object-contain bg-white rounded-lg border p-1 shadow-sm mt-1" alt="preview">`;
-                        }
+            // Resetear grilla de visualización
+            grid.innerHTML = `
+                <div class="p-2 bg-white rounded-lg border text-center text-[11px]" id="status-row-carrefour">🔵 Carrefour: ⏳...</div>
+                <div class="p-2 bg-white rounded-lg border text-center text-[11px]" id="status-row-coto">🔴 Coto: ⏳...</div>
+                <div class="p-2 bg-white rounded-lg border text-center text-[11px]" id="status-row-dia">🔴 DIA: ⏳...</div>
+                <div class="p-2 bg-white rounded-lg border text-center text-[11px]" id="status-row-changomas">🟡 ChangoMás: ⏳...</div>
+            `;
 
-                        statusDesc.innerHTML = `
-                            <div class="flex items-center gap-2">
-                                ${imageHTML}
-                                <div>
-                                    <strong>${parsed.name}</strong><br>
-                                    Precio Spot: <span class="text-emerald-600 font-bold">$${parsed.price.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-                                </div>
-                            </div>
-                        `;
-                        
-                        statusBox.dataset.tempPrice = parsed.price;
-                        statusBox.dataset.tempName = parsed.name;
-                        statusBox.dataset.tempImage = parsed.image || "";
-                        mostrarToast("Datos sincronizados con éxito", "fa-cloud-arrow-down");
+            const tiendas = ['carrefour', 'coto', 'dia', 'changomas'];
+            let preciosResultados = { carrefour: null, coto: null, dia: null, changomas: null };
+            let nombreUnificado = "";
+            let imagenUnificada = "";
+
+            const promesas = tiendas.map(async (tienda) => {
+                const elRow = document.getElementById(`status-row-${tienda}`);
+                try {
+                    const textData = await fetchPriceFromStore(tienda, ean, postalCodeActivo);
+                    let parsed = null;
+
+                    if (tienda === 'coto') {
+                        parsed = procesarRespuestaCoto(textData);
                     } else {
-                        statusIcon.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-500 text-lg"></i>`;
-                        statusTitle.innerText = "Producto no disponible en esta zona";
-                        statusDesc.innerText = "No se hallaron ofertas o existencias para tu código postal. Puedes registrarle un precio estimado debajo:";
-                        fallbackBox.classList.remove('hidden');
-                        limpiarTempData(statusBox);
+                        parsed = procesarRespuestaVtex(textData);
                     }
-                } else {
-                    throw new Error("Respuesta de la red vacía.");
+
+                    if (parsed && parsed.price) {
+                        preciosResultados[tienda] = parsed.price;
+                        if (parsed.name && !nombreUnificado) nombreUnificado = parsed.name;
+                        if (parsed.image && !imagenUnificada) imagenUnificada = parsed.image;
+
+                        elRow.className = "p-2 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200 font-semibold text-[11px]";
+                        elRow.innerHTML = `<i class="fa-solid fa-check text-emerald-600"></i> $${parsed.price.toLocaleString('es-AR')}`;
+                    } else {
+                        elRow.className = "p-2 bg-slate-100 text-slate-500 rounded-lg border border-slate-200 text-[11px]";
+                        elRow.innerHTML = `❌ No disp.`;
+                    }
+                } catch (e) {
+                    elRow.className = "p-2 bg-red-50 text-red-500 rounded-lg border border-red-150 text-[11px]";
+                    elRow.innerHTML = `❌ Error`;
                 }
-            } catch (error) {
-                console.error("Error consultando Carrefour:", error);
-                statusIcon.innerHTML = `<i class="fa-solid fa-circle-exclamation text-red-500 text-lg"></i>`;
-                statusTitle.innerText = "Servicio no disponible temporalmente";
-                statusDesc.innerText = "Carrefour bloqueó la conexión automática de red. Ingresa un precio manual provisorio para guardarlo en tu alacena:";
+            });
+
+            await Promise.all(promesas);
+
+            // Analizar resultados globales
+            const preciosValidos = Object.values(preciosResultados).filter(p => p !== null);
+            if (preciosValidos.length > 0) {
+                statusIcon.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500 text-lg"></i>`;
+                statusTitle.innerText = "¡Precios Sincronizados!";
+                
+                if (nombreUnificado) document.getElementById('form-name').value = nombreUnificado;
+
+                const minPrice = Math.min(...preciosValidos);
+                statusDesc.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        ${imagenUnificada ? `<img src="${imagenUnificada}" class="w-10 h-10 object-contain border bg-white p-0.5 rounded-lg">` : ''}
+                        <div>
+                            <span class="font-bold text-slate-800 block text-xs leading-snug">${nombreUnificado || 'Producto Encontrado'}</span>
+                            <span class="text-[11px] text-slate-500">Mejor Precio Spot: <strong class="text-emerald-600">$${minPrice.toLocaleString('es-AR')}</strong></span>
+                        </div>
+                    </div>
+                `;
+
+                // Guardamos en memoria temporal de la consola
+                statusBox.dataset.tempPrices = JSON.stringify(preciosResultados);
+                statusBox.dataset.tempName = nombreUnificado;
+                statusBox.dataset.tempImage = imagenUnificada;
+                mostrarToast("Precios de tiendas sincronizados", "fa-scale-balanced");
+            } else {
+                statusIcon.innerHTML = `<i class="fa-solid fa-circle-exclamation text-amber-500 text-lg"></i>`;
+                statusTitle.innerText = "Producto no encontrado o APIs bloqueadas";
+                statusDesc.innerText = "No obtuvimos cotizaciones automáticas vigentes. Puedes asignarle un precio manual estimado:";
                 fallbackBox.classList.remove('hidden');
                 limpiarTempData(statusBox);
-                mostrarToast("No pudimos conectar con los precios", "fa-triangle-exclamation");
             }
         }
 
-        // Aplica el precio manual provisorio digitado por el usuario en caso de bloqueo del API
         function aplicarPrecioManualFallback() {
             const val = parseFloat(document.getElementById('fallback-price-input').value);
             if (!val || val <= 0) {
@@ -894,7 +977,9 @@
             }
 
             const statusBox = document.getElementById('api-status-box');
-            statusBox.dataset.tempPrice = val;
+            // Guardamos precio ficticio en Carrefour como fallback
+            const fallbackPrices = { carrefour: val, coto: null, dia: null, changomas: null };
+            statusBox.dataset.tempPrices = JSON.stringify(fallbackPrices);
             
             const nameInput = document.getElementById('form-name');
             if (!nameInput.value.trim()) {
@@ -907,11 +992,11 @@
             
             document.getElementById('api-status-icon').innerHTML = `<i class="fa-solid fa-circle-check text-amber-500 text-lg"></i>`;
             document.getElementById('api-status-title').innerText = "¡Precio Provisorio Asignado!";
-            document.getElementById('api-status-desc').innerText = `Registrado a un precio de $${val.toLocaleString('es-AR')}. Listo para guardar en alacena.`;
+            document.getElementById('api-status-desc').innerText = `Asignado un precio de $${val.toLocaleString('es-AR')}. Listo para guardar.`;
         }
 
         function limpiarTempData(box) {
-            box.dataset.tempPrice = "";
+            box.dataset.tempPrices = "";
             box.dataset.tempName = "";
             box.dataset.tempImage = "";
         }
@@ -923,6 +1008,7 @@
             input.value = val;
         }
 
+        // --- STREAMING_CHUNK: Refining UI renders, stock changers and shopping optimizers... -->
         function guardarProducto() {
             const ean = document.getElementById('form-ean').value.trim();
             const name = document.getElementById('form-name').value.trim();
@@ -936,14 +1022,20 @@
             }
 
             const statusBox = document.getElementById('api-status-box');
-            let detectedPrice = parseFloat(statusBox.dataset.tempPrice) || 0;
+            let detectedPrices = { carrefour: null, coto: null, dia: null, changomas: null };
             let detectedImage = statusBox.dataset.tempImage || "";
 
-            if (detectedPrice === 0) {
+            if (statusBox.dataset.tempPrices) {
+                detectedPrices = JSON.parse(statusBox.dataset.tempPrices);
+            } else {
+                // Si no se buscó, asignamos precio aleatorio para simular bases iniciales
                 const exist = productos.find(p => p.ean === ean);
-                detectedPrice = exist ? exist.price : Math.floor(Math.random() * (2500 - 800) + 800);
+                detectedPrices = exist ? exist.prices : { carrefour: Math.floor(Math.random() * 1800 + 1000), coto: null, dia: null, changomas: null };
                 detectedImage = exist ? exist.image : "";
             }
+
+            // Conseguir precio base referencial (cualquiera que esté disponible)
+            const precioRef = detectedPrices.carrefour || detectedPrices.coto || detectedPrices.dia || detectedPrices.changomas || 1500;
 
             const existingIndex = productos.findIndex(p => p.ean === ean);
             const nuevoProducto = {
@@ -952,7 +1044,8 @@
                 category,
                 stock,
                 min,
-                price: detectedPrice,
+                price: precioRef, // Mantenemos propiedad price para retrocompatibilidad
+                prices: detectedPrices,
                 image: detectedImage,
                 lastUpdate: new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'})
             };
@@ -981,32 +1074,50 @@
                 mostrarToast("No hay productos para actualizar.", "fa-ban");
                 return;
             }
-            mostrarToast("Sincronizando precios con Carrefour...", "fa-arrows-rotate");
+            mostrarToast("Sincronizando precios multitienda...", "fa-arrows-rotate");
 
-            let actualizados = 0;
+            const tiendas = ['carrefour', 'coto', 'dia', 'changomas'];
+
             for (let prod of productos) {
-                try {
-                    const result = await fetchProductFromCarrefour(prod.ean, postalCodeActivo);
-                    const parsed = procesarRespuestaVtex(result);
-                    if (parsed) {
-                        prod.price = parsed.price;
-                        prod.name = parsed.name; 
-                        prod.image = parsed.image || prod.image; 
-                        prod.lastUpdate = "Sincronizado";
-                        actualizados++;
+                for (let tienda of tiendas) {
+                    try {
+                        const textData = await fetchPriceFromStore(tienda, prod.ean, postalCodeActivo);
+                        let parsed = null;
+                        if (tienda === 'coto') {
+                            parsed = procesarRespuestaCoto(textData);
+                        } else {
+                            parsed = procesarRespuestaVtex(textData);
+                        }
+                        if (parsed && parsed.price) {
+                            prod.prices[tienda] = parsed.price;
+                            prod.image = parsed.image || prod.image;
+                        }
+                    } catch (err) {
+                        console.warn(`Error actualizando ${tienda} para EAN ${prod.ean}`);
                     }
-                } catch (err) {
-                    console.warn(`No se pudo actualizar EAN ${prod.ean}`);
                 }
+                prod.lastUpdate = "Sincronizado";
             }
 
-            if (actualizados > 0) {
-                mostrarToast(`Precios actualizados: ${actualizados} items`, "fa-circle-check");
-                guardarProductosEnAlmacenamiento();
-            } else {
-                mostrarToast("No se pudo conectar con el servidor de precios", "fa-triangle-exclamation");
-            }
+            mostrarToast(`Base de datos actualizada`, "fa-circle-check");
+            guardarProductosEnAlmacenamiento();
             renderizarAlacena();
+        }
+
+        function cambiarOptimizadorGlobal(valor) {
+            optimizadorGlobal = valor;
+            mostrarToast(`Cálculo de carro: ${valor.toUpperCase()}`, "fa-wallet");
+            renderizarAlacena();
+        }
+
+        // Retorna el precio activo de un producto según el optimizador global configurado
+        function obtenerPrecioSegunFiltro(prices) {
+            if (!prices) return 0;
+            if (optimizadorGlobal === 'ahorro') {
+                const validos = Object.values(prices).filter(p => p !== null && p > 0);
+                return validos.length > 0 ? Math.min(...validos) : 0;
+            }
+            return prices[optimizadorGlobal] || 0;
         }
 
         function renderizarAlacena() {
@@ -1028,7 +1139,7 @@
                     </div>
                 `;
                 actualizarListaDeCompras();
-                renderizarSugerenciasCocina(); // Asegura sincronizar recetas incluso si está vacío
+                renderizarSugerenciasCocina();
                 return;
             }
 
@@ -1036,69 +1147,121 @@
             listaFiltrada.forEach(prod => {
                 const isUnderStock = prod.stock < prod.min;
                 const statusBadge = isUnderStock 
-                    ? `<span class="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-triangle-exclamation"></i> Bajo Stock</span>`
-                    : `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-check"></i> Suficiente</span>`;
+                    ? `<span class="bg-red-100 text-red-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full"><i class="fa-solid fa-triangle-exclamation text-[9px]"></i> Reposición Requerida</span>`
+                    : `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full"><i class="fa-solid fa-check text-[9px]"></i> Alacena Completa</span>`;
 
                 const cardBorderColor = isUnderStock ? "border-l-red-500" : "border-l-emerald-500";
 
                 let thumbnailHTML = `
-                    <div class="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 flex-shrink-0 border border-slate-200">
-                        <i class="fa-solid fa-box text-xl"></i>
+                    <div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 flex-shrink-0 border border-slate-200">
+                        <i class="fa-solid fa-box text-lg"></i>
                     </div>
                 `;
                 
                 if (prod.image) {
                     thumbnailHTML = `
-                        <div class="w-14 h-14 bg-white rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 border border-slate-200 p-1 shadow-inner">
-                            <img src="${prod.image}" class="w-full h-full object-contain" alt="img" onerror="this.parentElement.innerHTML='<i class=\'fa-solid fa-box text-xl text-slate-400\'></i>'">
+                        <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 border border-slate-200 p-1">
+                            <img src="${prod.image}" class="w-full h-full object-contain" alt="img" onerror="this.parentElement.innerHTML='<i class=\'fa-solid fa-box text-lg text-slate-400\'></i>'">
                         </div>
                     `;
                 }
 
+                // Generar filas comparativas para la grilla interna del producto
+                let compGridHTML = "";
+                const tiendasKeys = ['carrefour', 'coto', 'dia', 'changomas'];
+                const preciosValidos = Object.values(prod.prices).filter(p => p !== null && p > 0);
+                const minVal = preciosValidos.length > 0 ? Math.min(...preciosValidos) : 999999;
+
+                tiendasKeys.forEach(tKey => {
+                    const priceVal = prod.prices[tKey];
+                    const labelTienda = tKey === 'changomas' ? 'ChMas' : tKey.toUpperCase();
+                    if (priceVal) {
+                        const isCheapest = priceVal === minVal;
+                        const cardBg = isCheapest ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-50 border-slate-200';
+                        const textStyle = isCheapest ? 'text-emerald-700 font-bold' : 'text-slate-600';
+                        const badgeHTML = isCheapest ? '<span class="text-[8px] bg-emerald-600 text-white px-1 rounded-sm ml-1 font-black">MÁS BAJO</span>' : '';
+                        
+                        compGridHTML += `
+                            <div class="p-1 px-1.5 border ${cardBg} rounded-lg flex justify-between items-center text-[10px]">
+                                <span class="text-slate-400 font-bold">${labelTienda}:</span>
+                                <span class="${textStyle}">$${priceVal.toLocaleString('es-AR')} ${badgeHTML}</span>
+                            </div>
+                        `;
+                    } else {
+                        compGridHTML += `
+                            <div class="p-1 px-1.5 border border-slate-100 bg-slate-50/50 rounded-lg flex justify-between items-center text-[10px] text-slate-400">
+                                <span>${labelTienda}:</span>
+                                <span>--</span>
+                            </div>
+                        `;
+                    }
+                });
+
+                const activePrice = obtenerPrecioSegunFiltro(prod.prices);
+
                 container.innerHTML += `
                     <div class="bg-white p-4 rounded-2xl border-l-4 ${cardBorderColor} shadow-sm flex flex-col justify-between space-y-3 relative overflow-hidden transition hover:shadow-md animate-fadeIn">
+                        
+                        <!-- Cabecera Producto -->
                         <div class="flex items-start gap-3">
                             ${thumbnailHTML}
                             <div class="flex-1 min-w-0">
-                                <span class="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">${prod.category}</span>
+                                <span class="text-[10px] text-indigo-500 font-bold tracking-wider uppercase">${prod.category}</span>
                                 <h4 class="font-bold text-slate-800 text-sm leading-tight pr-6 truncate" title="${prod.name}">${prod.name}</h4>
-                                <p class="text-[10px] text-slate-400 font-mono mt-0.5">EAN: ${prod.ean}</p>
+                                <p class="text-[9px] text-slate-400 font-mono mt-0.5">EAN: ${prod.ean}</p>
                             </div>
                             <button onclick="eliminarProducto('${prod.ean}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
-                            <div class="flex flex-col justify-center">
-                                <span class="text-[10px] text-slate-400 font-medium mb-1">Stock (Mín: ${prod.min})</span>
-                                <div class="flex items-center space-x-2">
-                                    <button onclick="cambiarStock('${prod.ean}', -1)" class="w-6 h-6 bg-slate-100 active:bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-600">-</button>
-                                    <span class="font-bold text-sm w-4 text-center ${isUnderStock ? 'text-red-600' : 'text-slate-800'}">${prod.stock}</span>
-                                    <button onclick="cambiarStock('${prod.ean}', 1)" class="w-6 h-6 bg-slate-100 active:bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-600">+</button>
-                                </div>
-                            </div>
-                            <div class="text-right flex flex-col justify-center items-end">
-                                <span class="text-[10px] text-slate-400 font-medium">Spot Price Carrefour</span>
-                                <span class="font-black text-slate-800 text-base">$${prod.price.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-                                <span class="text-[9px] text-slate-400 flex items-center gap-1">
-                                    <i class="fa-solid fa-clock"></i> ${prod.lastUpdate}
-                                </span>
+                        <!-- Panel Comparativo de Precios Spot -->
+                        <div class="bg-slate-50/50 p-2 rounded-xl space-y-1.5 border border-slate-100">
+                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
+                                <i class="fa-solid fa-tags"></i> Comparación en Tiempo Real
+                            </p>
+                            <div class="grid grid-cols-2 gap-1.5">
+                                ${compGridHTML}
                             </div>
                         </div>
 
-                        <div class="flex justify-between items-center pt-1.5">
+                        <!-- Grilla de Control de Stock y Mínimos -->
+                        <div class="grid grid-cols-2 gap-3 pt-2.5 border-t border-slate-100 text-xs">
+                            <!-- Control Stock Actual -->
+                            <div class="flex flex-col bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                <span class="text-[10px] text-slate-400 font-bold mb-1 uppercase tracking-wide">Tengo:</span>
+                                <div class="flex items-center justify-between">
+                                    <button onclick="cambiarStock('${prod.ean}', -1)" class="w-6 h-6 bg-white active:bg-slate-200 border rounded-full flex items-center justify-center font-bold text-slate-600 shadow-sm">-</button>
+                                    <span class="font-black text-sm w-4 text-center ${isUnderStock ? 'text-red-600' : 'text-slate-800'}">${prod.stock}</span>
+                                    <button onclick="cambiarStock('${prod.ean}', 1)" class="w-6 h-6 bg-white active:bg-slate-200 border rounded-full flex items-center justify-center font-bold text-slate-600 shadow-sm">+</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Control Stock Mínimo -->
+                            <div class="flex flex-col bg-indigo-50/30 p-2 rounded-xl border border-indigo-100">
+                                <span class="text-[10px] text-indigo-500 font-bold mb-1 uppercase tracking-wide">Mínimo (Repo):</span>
+                                <div class="flex items-center justify-between">
+                                    <button onclick="cambiarMin('${prod.ean}', -1)" class="w-6 h-6 bg-white active:bg-indigo-200 border rounded-full flex items-center justify-center font-bold text-indigo-600 shadow-sm">-</button>
+                                    <span class="font-black text-sm w-4 text-center text-indigo-900">${prod.min}</span>
+                                    <button onclick="cambiarMin('${prod.ean}', 1)" class="w-6 h-6 bg-white active:bg-indigo-200 border rounded-full flex items-center justify-center font-bold text-indigo-600 shadow-sm">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer de la Tarjeta -->
+                        <div class="flex justify-between items-center pt-2 border-t border-slate-50">
                             ${statusBadge}
-                            <button onclick="consultarProductoIndividual('${prod.ean}')" class="text-[10px] text-blue-600 hover:underline font-semibold flex items-center gap-1">
-                                <i class="fa-solid fa-cloud-arrow-down"></i> Forzar Spot
-                            </button>
+                            <div class="text-right">
+                                <span class="text-[9px] text-slate-400 block">Precio Ref. Seleccionado</span>
+                                <strong class="text-slate-800 text-sm">$${activePrice > 0 ? activePrice.toLocaleString('es-AR') : 'Sin precio'}</strong>
+                            </div>
                         </div>
                     </div>
                 `;
             });
 
             actualizarListaDeCompras();
-            renderizarSugerenciasCocina(); // Sincroniza las recetas
+            renderizarSugerenciasCocina();
         }
 
         // --- SISTEMA RECOMENDADOR DE COCINA INTELIGENTE ---
@@ -1106,18 +1269,14 @@
             const container = document.getElementById('lista-recetas-sugeridas');
             const totalRecetasLbl = document.getElementById('lbl-recetas-disponibles');
 
-            // 1. Conseguimos todos los productos que tengan stock > 0
             const stockActual = productos.filter(p => p.stock > 0);
-            
             let recetasSugeridas = [];
 
             recetasDB.forEach((receta, index) => {
                 let ingredientesMatch = [];
                 let ingredientesMissing = [];
 
-                // Validamos cada ingrediente requerido para la receta
                 receta.ingredientesClave.forEach(ingReq => {
-                    // ¿Existe en nuestra alacena algún producto con stock > 0 que matchee con las palabras clave?
                     const tieneStock = stockActual.some(p => {
                         const nameLower = p.name.toLowerCase();
                         return ingReq.clave.some(keyword => nameLower.includes(keyword));
@@ -1130,9 +1289,6 @@
                     }
                 });
 
-                // Calculamos nivel de viabilidad:
-                // - Si tiene todos los ingredientes -> "¡Listo para cocinar!"
-                // - Si le falta solo 1 ingrediente clave -> "Falta poco"
                 const cantFaltantes = ingredientesMissing.length;
                 if (cantFaltantes === 0 || cantFaltantes === 1) {
                     recetasSugeridas.push({
@@ -1146,9 +1302,7 @@
                 }
             });
 
-            // Ordenamos: primero las que están listas para cocinar
             recetasSugeridas.sort((a, b) => b.listo - a.listo);
-
             totalRecetasLbl.innerText = `${recetasSugeridas.length} Ideas`;
 
             if (recetasSugeridas.length === 0) {
@@ -1156,7 +1310,6 @@
                     <div class="bg-slate-50 p-4 rounded-xl text-center text-slate-400 border border-slate-100 text-xs">
                         <i class="fa-solid fa-utensils text-lg mb-1 text-slate-300 block"></i>
                         No tenemos recetas para sugerir con tu stock actual.
-                        <p class="text-[10px] mt-1 text-slate-400">Añade productos básicos (arroz, fideos, puré de tomate, leche, yerba) para ver sugerencias.</p>
                     </div>
                 `;
                 return;
@@ -1170,7 +1323,6 @@
                     ? `<span class="bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> ¡LISTO!</span>`
                     : `<span class="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-md flex items-center gap-1"><i class="fa-solid fa-hourglass-half"></i> FALTA POCO</span>`;
 
-                // Construimos la lista de ingredientes visuales
                 let ingredientesHTML = "";
                 rec.completos.forEach(c => {
                     ingredientesHTML += `<span class="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg flex items-center gap-1 font-medium"><i class="fa-solid fa-check text-[9px]"></i> ${c}</span>`;
@@ -1178,18 +1330,16 @@
 
                 let faltantesHTML = "";
                 rec.faltantes.forEach(f => {
-                    // Creamos el botón dinámico para agregar el ingrediente faltante al listado de compras con un clic
                     faltantesHTML += `
                         <div class="flex items-center justify-between gap-1 text-[11px] text-amber-700 bg-amber-50/50 border border-amber-100 p-1.5 rounded-lg w-full font-medium mt-1">
                             <span class="flex items-center gap-1"><i class="fa-solid fa-xmark text-red-400"></i> ${f.nombreExhibicion}</span>
-                            <button onclick="agregarIngredienteFaltante('${f.clave[0]}', '${f.nombreExhibicion}')" class="bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold px-2 py-0.5 rounded text-[10px] transition-all flex items-center gap-1" title="Añadir a faltantes para comprar">
+                            <button onclick="agregarIngredienteFaltante('${f.clave[0]}', '${f.nombreExhibicion}')" class="bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold px-2 py-0.5 rounded text-[10px] transition-all flex items-center gap-1">
                                 <i class="fa-solid fa-plus text-[8px]"></i> Comprar
                             </button>
                         </div>
                     `;
                 });
 
-                // Pasos de preparación
                 let pasosHTML = "";
                 rec.pasos.forEach((p, idx) => {
                     pasosHTML += `
@@ -1202,8 +1352,6 @@
 
                 container.innerHTML += `
                     <div class="bg-white border-2 ${colorBorder} rounded-xl overflow-hidden transition shadow-sm hover:shadow-md animate-fadeIn">
-                        
-                        <!-- Cabecera de Receta -->
                         <div class="${bgHeader} px-3.5 py-2.5 flex justify-between items-center cursor-pointer select-none" onclick="toggleDetalleReceta(${rec.indexID})">
                             <div>
                                 <span class="text-[9px] font-bold text-indigo-500 uppercase tracking-wider">${rec.categoria}</span>
@@ -1215,10 +1363,7 @@
                             </div>
                         </div>
 
-                        <!-- Detalle Receta (Oculto por defecto, se despliega) -->
                         <div id="detalle-receta-${rec.indexID}" class="hidden p-3.5 border-t border-slate-100 bg-white space-y-3">
-                            
-                            <!-- Estado de ingredientes -->
                             <div>
                                 <h5 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Ingredientes Necesarios:</h5>
                                 <div class="flex flex-wrap gap-1.5">
@@ -1226,8 +1371,6 @@
                                 </div>
                                 ${rec.faltantes.length > 0 ? `<div class="mt-2 space-y-1">${faltantesHTML}</div>` : ''}
                             </div>
-
-                            <!-- Preparación -->
                             <div class="pt-2 border-t border-slate-100">
                                 <h5 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Instrucciones de preparación:</h5>
                                 <ul class="space-y-2">
@@ -1235,13 +1378,11 @@
                                 </ul>
                             </div>
                         </div>
-
                     </div>
                 `;
             });
         }
 
-        // Despliega u oculta el paso a paso de la preparación
         function toggleDetalleReceta(recetaId) {
             const details = document.getElementById(`detalle-receta-${recetaId}`);
             const icon = document.getElementById(`icon-receta-${recetaId}`);
@@ -1254,20 +1395,16 @@
             }
         }
 
-        // Permite añadir al listado el producto faltante con un EAN ficticio estructurado
         function agregarIngredienteFaltante(palabraClave, nombreBonito) {
-            // Generamos un código de barras secuencial ficticio
             const eanFicticio = "999" + Math.floor(Math.random() * 10000000000); 
-
-            // Creamos una ficha de producto de reposición (Stock 0 / Mínimo 1) para que el listador de compras
-            // lo capture de inmediato y calcule el presupuesto con un precio de base estimado.
             const nuevoFaltante = {
                 ean: eanFicticio,
                 name: `Ingrediente Receta - ${nombreBonito}`,
                 category: "Almacén",
                 stock: 0,
                 min: 1,
-                price: 1550, // Precio estimado por defecto para productos cargados desde sugerencias
+                price: 1550,
+                prices: { carrefour: 1550, coto: null, dia: null, changomas: null },
                 image: "",
                 lastUpdate: "Añadido desde Recetas"
             };
@@ -1277,7 +1414,6 @@
             renderizarAlacena();
             mostrarToast(`"${nombreBonito}" añadido a tu Lista de Compras`, "fa-cart-plus");
             
-            // Hacemos scroll directo al panel de compras para que vea el cambio
             setTimeout(() => {
                 scrollToSection('panel-compras');
             }, 500);
@@ -1288,13 +1424,21 @@
             const comprasUl = document.getElementById('compras-items');
             const criticalCount = document.getElementById('lbl-critical-count');
             const totalLbl = document.getElementById('shopping-total');
+            const optDesc = document.getElementById('shopping-total-optimizer-desc');
 
             const faltantes = productos.filter(p => p.stock < p.min);
             criticalCount.innerText = `${faltantes.length} Items`;
 
+            if (optimizadorGlobal === "ahorro") {
+                optDesc.innerText = "Modo: Ahorro Máximo (Precios más bajos combinados)";
+            } else {
+                optDesc.innerText = `Modo: Compra Entera en ${optimizadorGlobal.toUpperCase()}`;
+            }
+
             if (faltantes.length === 0) {
                 comprasUl.innerHTML = `<li class="text-slate-400 text-center text-xs py-4">Tu alacena está completa. ¡Buen trabajo!</li>`;
                 totalLbl.innerText = "$0.00";
+                renderizarGrillaPresupuestosCompletos(0);
                 return;
             }
 
@@ -1303,7 +1447,8 @@
 
             faltantes.forEach(prod => {
                 const cantidadAComprar = prod.min - prod.stock;
-                const costoItem = prod.price * cantidadAComprar;
+                const activePrice = obtenerPrecioSegunFiltro(prod.prices);
+                const costoItem = activePrice * cantidadAComprar;
                 sumaTotal += costoItem;
 
                 let imgThumb = `<span class="w-5 h-5 bg-red-500/30 text-red-300 rounded-full flex items-center justify-center text-[10px] font-black">${cantidadAComprar}</span>`;
@@ -1324,13 +1469,76 @@
                         </div>
                         <div class="text-right flex-shrink-0">
                             <span class="font-bold text-amber-300 text-xs">$${costoItem.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-                            <span class="block text-[9px] text-slate-400">$${prod.price.toLocaleString('es-AR')} c/u</span>
+                            <span class="block text-[9px] text-slate-400">$${activePrice.toLocaleString('es-AR')} c/u</span>
                         </div>
                     </li>
                 `;
             });
 
             totalLbl.innerText = `$${sumaTotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+
+            // Actualizar la comparativa del carro entero de supermercados
+            calcularPresupuestosDeCarroEntero(faltantes);
+        }
+
+        // Calcula el presupuesto consolidado por separado de las 4 tiendas
+        function calcularPresupuestosDeCarroEntero(faltantes) {
+            const grid = document.getElementById('basket-comparer-grid');
+            const tiendas = ['carrefour', 'coto', 'dia', 'changomas'];
+            
+            let totales = { carrefour: 0, coto: 0, dia: 0, changomas: 0 };
+            let itemsFaltantesPorTienda = { carrefour: 0, coto: 0, dia: 0, changomas: 0 };
+
+            faltantes.forEach(prod => {
+                const cantidad = prod.min - prod.stock;
+                tiendas.forEach(t => {
+                    const price = prod.prices[t];
+                    if (price && price > 0) {
+                        totales[t] += price * cantidad;
+                    } else {
+                        // Usar precio fallback si no tiene de esa sucursal, e incrementamos cont de items faltantes
+                        const backupPrice = prod.prices.carrefour || prod.prices.coto || prod.prices.dia || prod.prices.changomas || 1500;
+                        totales[t] += backupPrice * cantidad;
+                        itemsFaltantesPorTienda[t]++;
+                    }
+                });
+            });
+
+            // Buscar tienda más barata
+            let minTienda = 'carrefour';
+            let minVal = totales.carrefour;
+            tiendas.forEach(t => {
+                if (totales[t] < minVal) {
+                    minVal = totales[t];
+                    minTienda = t;
+                }
+            });
+
+            grid.innerHTML = "";
+            tiendas.forEach(t => {
+                const nom = t === 'changomas' ? 'ChangoMás' : (t === 'carrefour' ? 'Carrefour' : t.toUpperCase());
+                const totalText = totales[t] > 0 ? `$${totales[t].toLocaleString('es-AR', {maximumFractionDigits: 0})}` : '--';
+                const hasMissingText = itemsFaltantesPorTienda[t] > 0 ? ` <span class="text-[9px] text-amber-400">(*${itemsFaltantesPorTienda[t]} est.)</span>` : '';
+                const isBest = t === minTienda;
+
+                grid.innerHTML += `
+                    <div class="p-1 px-2 rounded-lg border ${isBest ? 'border-emerald-500 bg-emerald-500/20 text-emerald-200' : 'border-white/10 bg-white/5'} flex justify-between items-center">
+                        <span class="font-bold flex items-center gap-1">
+                            ${isBest ? '🔥 ' : ''}${nom}:
+                        </span>
+                        <span>
+                            <strong>${totalText}</strong>${hasMissingText}
+                        </span>
+                    </div>
+                `;
+            });
+        }
+
+        function renderizarGrillaPresupuestosCompletos(valorZero) {
+            const grid = document.getElementById('basket-comparer-grid');
+            grid.innerHTML = `
+                <div class="col-span-2 text-center text-slate-400 text-[11px] py-1">Tu carro está vacío</div>
+            `;
         }
 
         // --- CONTROLADORES DE ACCIONES ---
@@ -1357,6 +1565,16 @@
             }
         }
 
+        function cambiarMin(ean, delta) {
+            const prod = productos.find(p => p.ean === ean);
+            if (prod) {
+                prod.min = Math.max(1, prod.min + delta);
+                guardarProductosEnAlmacenamiento();
+                renderizarAlacena();
+                mostrarToast(`Mínimo de "${prod.name}" ajustado a ${prod.min}`, "fa-bell");
+            }
+        }
+
         function eliminarProducto(ean) {
             productos = productos.filter(p => p.ean !== ean);
             mostrarToast("Producto eliminado de tu alacena", "fa-trash-can");
@@ -1364,28 +1582,13 @@
             renderizarAlacena();
         }
 
-        async function consultarProductoIndividual(ean) {
-            const prod = productos.find(p => p.ean === ean);
-            if (!prod) return;
-
-            mostrarToast(`Sincronizando ${prod.name}...`, "fa-spinner");
-            try {
-                const result = await fetchProductFromCarrefour(prod.ean, postalCodeActivo);
-                const parsed = procesarRespuestaVtex(result);
-                if (parsed) {
-                    prod.price = parsed.price;
-                    prod.name = parsed.name;
-                    prod.image = parsed.image || prod.image;
-                    prod.lastUpdate = "Sincronizado";
-                    mostrarToast("¡Precio Spot actualizado!", "fa-circle-check");
-                    guardarProductosEnAlmacenamiento();
-                    renderizarAlacena();
-                } else {
-                    mostrarToast("Producto no encontrado en Carrefour para tu CP", "fa-triangle-exclamation");
-                }
-            } catch (err) {
-                mostrarToast("No se pudo conectar con los precios", "fa-triangle-exclamation");
-            }
+        function consultarEanDePrueba() {
+            // EAN de prueba común en Argentina (Arroz Gallo, Fideos, Yerba)
+            const pruebas = ["7790060813209", "7790742333605", "7790070335623"];
+            const eanSelected = pruebas[Math.floor(Math.random() * pruebas.length)];
+            document.getElementById('form-ean').value = eanSelected;
+            mostrarToast("Código de prueba insertado", "fa-barcode");
+            buscarPrecioMultitienda();
         }
 
         function compartirLista() {
@@ -1395,21 +1598,24 @@
                 return;
             }
 
-            let mensaje = `📝 *Lista de Compras Crítica (Alacena)*\n📍 Zona: ${ciudadActiva} (C.P. ${postalCodeActivo})\n\n`;
+            let mensaje = `📝 *Lista de Compras Comparativa (SpotPrice)*\n📍 Zona: ${ciudadActiva} (C.P. ${postalCodeActivo})\n`;
+            mensaje += `⚙️ Modo Presupuesto: ${optimizadorGlobal === 'ahorro' ? 'Ahorro Máximo (Más barato por tienda)' : optimizadorGlobal.toUpperCase()}\n\n`;
+            
             let total = 0;
 
             faltantes.forEach(prod => {
                 const cantidad = prod.min - prod.stock;
-                const costo = prod.price * cantidad;
+                const activePrice = obtenerPrecioSegunFiltro(prod.prices);
+                const costo = activePrice * cantidad;
                 total += costo;
-                mensaje += `• *${cantidad}x* ${prod.name}\n  Precio Carrefour Spot: $${prod.price.toLocaleString('es-AR')} (Subtotal: $${costo.toLocaleString('es-AR')})\n\n`;
+                mensaje += `• *${cantidad}x* ${prod.name}\n  Precio Spot: $${activePrice.toLocaleString('es-AR')} (Subtotal: $${costo.toLocaleString('es-AR')})\n\n`;
             });
 
-            mensaje += `💵 *Total Estimado Carrefour:* $${total.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+            mensaje += `💵 *Total Estimado Consolidado:* $${total.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
 
             if (navigator.share) {
                 navigator.share({
-                    title: 'Mi Lista de Compras SpotPrice',
+                    title: 'Lista de Compras Comparativa SpotPrice',
                     text: mensaje
                 }).catch(err => console.log(err));
             } else {
