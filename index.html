@@ -1121,31 +1121,33 @@
                 mostrarToast("No hay productos para actualizar.", "fa-ban");
                 return;
             }
-            mostrarToast("Sincronizando precios con Carrefour...", "fa-arrows-rotate");
+            mostrarToast("Sincronizando precios...", "fa-arrows-rotate");
 
-            let actualizados = 0;
+            const tiendas = ['carrefour', 'coto', 'dia', 'changomas'];
+
             for (let prod of productos) {
-                try {
-                    const result = await fetchProductFromCarrefour(prod.ean, postalCodeActivo);
-                    const parsed = procesarRespuestaVtex(result);
-                    if (parsed) {
-                        prod.price = parsed.price;
-                        prod.name = parsed.name; 
-                        prod.image = parsed.image || prod.image; 
-                        prod.lastUpdate = "Sincronizado";
-                        actualizados++;
+                for (let tienda of tiendas) {
+                    try {
+                        const textData = await fetchPriceFromStore(tienda, prod.ean, postalCodeActivo);
+                        let parsed = null;
+                        if (tienda === 'coto') {
+                            parsed = procesarRespuestaCoto(textData);
+                        } else {
+                            parsed = procesarRespuestaVtex(textData);
+                        }
+                        if (parsed && parsed.price) {
+                            prod.prices[tienda] = parsed.price;
+                            prod.image = parsed.image || prod.image;
+                        }
+                    } catch (err) {
+                        console.warn(`Error actualizando ${tienda} para EAN ${prod.ean}`);
                     }
-                } catch (err) {
-                    console.warn(`No se pudo actualizar EAN ${prod.ean}`);
                 }
+                prod.lastUpdate = "Sincronizado";
             }
 
-            if (actualizados > 0) {
-                mostrarToast(`Precios actualizados: ${actualizados} items`, "fa-circle-check");
-                guardarProductosEnAlmacenamiento();
-            } else {
-                mostrarToast("No se pudo conectar con el servidor de precios", "fa-triangle-exclamation");
-            }
+            mostrarToast(`Base de datos actualizada`, "fa-circle-check");
+            guardarProductosEnAlmacenamiento();
             renderizarAlacena();
         }
 
@@ -1471,6 +1473,68 @@
             });
 
             totalLbl.innerText = `$${sumaTotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+            // Actualizar la comparativa del carro entero de supermercados
+            calcularPresupuestosDeCarroEntero(faltantes);
+        }
+
+                // Calcula el presupuesto consolidado por separado de las 4 tiendas
+        function calcularPresupuestosDeCarroEntero(faltantes) {
+            const grid = document.getElementById('basket-comparer-grid');
+            const tiendas = ['carrefour', 'coto', 'dia', 'changomas'];
+            
+            let totales = { carrefour: 0, coto: 0, dia: 0, changomas: 0 };
+            let itemsFaltantesPorTienda = { carrefour: 0, coto: 0, dia: 0, changomas: 0 };
+
+            faltantes.forEach(prod => {
+                const cantidad = prod.min - prod.stock;
+                tiendas.forEach(t => {
+                    const price = prod.prices[t];
+                    if (price && price > 0) {
+                        totales[t] += price * cantidad;
+                    } else {
+                        // Usar precio fallback si no tiene de esa sucursal, e incrementamos cont de items faltantes
+                        const backupPrice = prod.prices.carrefour || prod.prices.coto || prod.prices.dia || prod.prices.changomas || 1500;
+                        totales[t] += backupPrice * cantidad;
+                        itemsFaltantesPorTienda[t]++;
+                    }
+                });
+            });
+
+            // Buscar tienda más barata
+            let minTienda = 'carrefour';
+            let minVal = totales.carrefour;
+            tiendas.forEach(t => {
+                if (totales[t] < minVal) {
+                    minVal = totales[t];
+                    minTienda = t;
+                }
+            });
+
+            grid.innerHTML = "";
+            tiendas.forEach(t => {
+                const nom = t === 'changomas' ? 'ChangoMás' : (t === 'carrefour' ? 'Carrefour' : t.toUpperCase());
+                const totalText = totales[t] > 0 ? `$${totales[t].toLocaleString('es-AR', {maximumFractionDigits: 0})}` : '--';
+                const hasMissingText = itemsFaltantesPorTienda[t] > 0 ? ` <span class="text-[9px] text-amber-400">(*${itemsFaltantesPorTienda[t]} est.)</span>` : '';
+                const isBest = t === minTienda;
+
+                grid.innerHTML += `
+                    <div class="p-1 px-2 rounded-lg border ${isBest ? 'border-emerald-500 bg-emerald-500/20 text-emerald-200' : 'border-white/10 bg-white/5'} flex justify-between items-center">
+                        <span class="font-bold flex items-center gap-1">
+                            ${isBest ? '🔥 ' : ''}${nom}:
+                        </span>
+                        <span>
+                            <strong>${totalText}</strong>${hasMissingText}
+                        </span>
+                    </div>
+                `;
+            });
+        }
+
+        function renderizarGrillaPresupuestosCompletos(valorZero) {
+            const grid = document.getElementById('basket-comparer-grid');
+            grid.innerHTML = `
+                <div class="col-span-2 text-center text-slate-400 text-[11px] py-1">Tu carro está vacío</div>
+            `;
         }
 
         // --- CONTROLADORES DE ACCIONES ---
