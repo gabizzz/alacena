@@ -82,7 +82,7 @@
                 </button>
             </div>
 
-            <!-- NUEVO: Selector Global de Filtro de Precios -->
+            <!-- Selector Global de Filtro de Precios -->
             <div class="pt-3 border-t border-slate-100">
                 <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Calcular Presupuestos según:</label>
                 <select id="global-store-optimizer" onchange="cambiarOptimizadorGlobal(this.value)" class="w-full text-xs bg-indigo-50/70 text-indigo-900 border border-indigo-100 rounded-xl px-3 py-2.5 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -197,7 +197,7 @@
                     </div>
                 </div>
                 
-                <!-- Caja desplegable de Logs de Diagnóstico Técnico -->
+                <!-- Caja de Logs de Diagnóstico Técnico -->
                 <details class="bg-white border border-slate-200 rounded-lg p-2 text-[10px] text-slate-600 font-mono">
                     <summary class="font-bold text-slate-500 cursor-pointer select-none">Ver logs de conexión técnica</summary>
                     <div class="mt-1.5 space-y-1 max-h-32 overflow-y-auto" id="technical-debug-logs">
@@ -228,7 +228,7 @@
             </div>
         </section>
 
-        <!-- NUEVA SECCIÓN: RECOMENDADOR DE COCINA -->
+        <!-- SECCIÓN: RECOMENDADOR DE COCINA -->
         <section id="panel-recetas" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
             <div class="flex items-center justify-between border-b pb-2">
                 <h2 class="font-bold text-slate-800 flex items-center gap-2 text-md">
@@ -712,7 +712,6 @@
             document.getElementById('permission-guide-modal').classList.add('hidden');
         }
 
-        // --- STREAMING_CHUNK: Writing the multi-supermarket scanner logic... -->
         function logTecnico(mensaje, tipo = "info") {
             const logsContainer = document.getElementById('technical-debug-logs');
             const color = tipo === "error" ? "text-red-500" : (tipo === "success" ? "text-emerald-600" : "text-slate-600");
@@ -730,7 +729,6 @@
             ]);
         }
 
-        // --- STREAMING_CHUNK: Coding VTEX and Coto HTML price parsing algorithms... -->
         // Helper para procesar formato de número monetario argentino (ej: 1.234,56 o 999,00)
         function parsePriceAR(str) {
             if (!str) return null;
@@ -756,12 +754,28 @@
             } else if (tienda === 'changomas') {
                 targetUrl = `https://www.masonline.com.ar/api/io/_v/api/intelligent-search/product_search?query=${ean}&_nocache=${timestamp}`;
             } else if (tienda === 'coto') {
-                targetUrl = `https://www.cotodigital3.com.ar/sitios/cdigi/browse?Ntt=${ean}&_nocache=${timestamp}`;
+                // Nuevo endpoint de Constructor.io para Coto con clave pública funcional
+                targetUrl = `https://ac.cnstrc.com/autocomplete/${ean}?c=cio-ui-autocomplete-1.29.3&key=key_r6xzz4IAoTWcipni&num_results_Products=1`;
             }
 
             logTecnico(`Consultando ${tienda.toUpperCase()}: ${targetUrl}`);
 
-            // Canales de Bypass CORS secuenciales
+            // Dado que Constructor.io tiene cabeceras CORS abiertas al público, para Coto intentamos conexión directa primero.
+            if (tienda === 'coto') {
+                try {
+                    logTecnico(`Consultando Coto de forma directa (Constructor.io)...`);
+                    const response = await fetchWithTimeout(targetUrl, {}, 5000);
+                    if (response.ok) {
+                        const textData = await response.text();
+                        logTecnico(`Conexión directa Coto exitosa.`, "success");
+                        return textData;
+                    }
+                } catch (err) {
+                    logTecnico(`Conexión directa Coto fallida: ${err.message}. Intentando proxies...`, "error");
+                }
+            }
+
+            // Canales de Bypass CORS secuenciales (usados siempre para VTEX y de respaldo para Coto)
             const proxies = [
                 `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
                 `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
@@ -774,7 +788,9 @@
                     const response = await fetchWithTimeout(proxies[i], {}, 5000);
                     if (response.ok) {
                         const textData = await response.text();
-                        if (textData.trim().startsWith("<") && tienda !== 'coto') {
+                        
+                        // Validar CDN blocks
+                        if (textData.trim().startsWith("<") && (tienda !== 'coto' && tienda !== 'carrefour' && tienda !== 'dia' && tienda !== 'changomas')) {
                             throw new Error("Bloqueo / Firewall CDN");
                         }
                         logTecnico(`Canal ${i+1} exitoso para ${tienda}.`, "success");
@@ -828,45 +844,60 @@
             }
         }
 
-        // Parsea datos de Coto (ATG HTML)
-        function procesarRespuestaCoto(htmlText) {
+        // Nuevo procesador estructurado para la API Constructor.io de Coto Digital (Con Ofertas)
+        function procesarRespuestaCoto(jsonText) {
             try {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(htmlText, 'text/html');
-                
-                let name = "";
-                if (doc.title && doc.title.includes("Coto Digital")) {
-                    name = doc.title.split("-")[0].trim();
-                }
+                const json = JSON.parse(jsonText);
+                const productos = json.sections?.Products || [];
 
-                const nameEl = doc.querySelector('.descrip_full, .product_name, h1, h2');
-                if (nameEl) name = nameEl.textContent.trim();
+                if (productos.length > 0) {
+                    const prod = productos[0];
+                    const data = prod.data;
 
-                // Intentar selectores de precio
-                const priceEl = doc.querySelector('.atg_store_newPrice, .atg_store_productPrice, .price_discount');
-                let price = null;
-                if (priceEl) {
-                    price = parsePriceAR(priceEl.textContent);
-                } else {
-                    const match = htmlText.match(/class="atg_store_newPrice"[^>]*>\s*(\$[\d.,\s]+)/i);
-                    if (match) price = parsePriceAR(match[1]);
-                }
+                    // Mapear nombre e imagen
+                    const name = data.sku_display_name || prod.value;
+                    const brand = data.product_brand || "Genérico";
+                    const completeName = (brand && brand.toLowerCase() !== "genérico" && brand.toLowerCase() !== "generico") 
+                        ? `${brand} - ${name}` 
+                        : name;
+                    
+                    const imageUrl = data.image_url || "";
 
-                let imageUrl = "";
-                const imgEl = doc.querySelector('.atg_store_productImage img, #atg_store_zoomImage, .product_image img');
-                if (imgEl && imgEl.src) {
-                    imageUrl = imgEl.src;
-                }
+                    // Determinar el precio de lista base (usamos el primero de la lista o propiedad regular)
+                    let precioLista = data.product_list_price;
+                    if (data.price && data.price.length > 0) {
+                        precioLista = data.price[0].listPrice;
+                    }
 
-                if (price !== null) {
-                    return {
-                        name: name || "Producto Coto",
-                        price: price,
-                        image: imageUrl
-                    };
+                    let finalPrice = precioLista;
+
+                    // Evaluar si existen descuentos/promociones activas (Ej. Tarjeta Comunidad Coto, ofertas web)
+                    if (data.discounts && data.discounts.length > 0) {
+                        const promo = data.discounts[0];
+                        if (promo.discountPrice) {
+                            finalPrice = typeof promo.discountPrice === 'string' 
+                                ? parsePriceAR(promo.discountPrice) 
+                                : parseFloat(promo.discountPrice);
+                        }
+                    } else {
+                        finalPrice = typeof finalPrice === 'string' 
+                            ? parsePriceAR(finalPrice) 
+                            : parseFloat(finalPrice);
+                    }
+
+                    if (finalPrice !== null && !isNaN(finalPrice)) {
+                        logTecnico(`Coto Parse: Producto encontrado "${completeName}" a $${finalPrice}`, "success");
+                        return {
+                            name: completeName,
+                            price: finalPrice,
+                            image: imageUrl
+                        };
+                    }
                 }
+                logTecnico(`Coto API: No se encontró el producto en la sección Products.`, "error");
                 return null;
             } catch (err) {
+                logTecnico(`Error crítico parseando respuesta Coto: ${err.message}`, "error");
                 return null;
             }
         }
@@ -1008,7 +1039,6 @@
             input.value = val;
         }
 
-        // --- STREAMING_CHUNK: Refining UI renders, stock changers and shopping optimizers... -->
         function guardarProducto() {
             const ean = document.getElementById('form-ean').value.trim();
             const name = document.getElementById('form-name').value.trim();
@@ -1583,7 +1613,7 @@
         }
 
         function consultarEanDePrueba() {
-            // EAN de prueba común en Argentina (Arroz Gallo, Fideos, Yerba)
+            // EAN de prueba común en Argentina (Arroz Gallo, Leche Zero, Yerba Taragüi)
             const pruebas = ["7790060813209", "7790742333605", "7790070335623"];
             const eanSelected = pruebas[Math.floor(Math.random() * pruebas.length)];
             document.getElementById('form-ean').value = eanSelected;
